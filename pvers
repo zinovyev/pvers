@@ -30,10 +30,17 @@ else
     mv $(echo "php-"$version) src;
     rm $(echo $archive);
 
-    echo "Compiling...";
+    echo "Configuring...";
+    # compile_options=("--with-openssl" "--enable-bcmath" "--enable-fpm" "--with-openssl" "--with-curl" "--enable-mbstring" "--with-mysqli" "--with-pdo-mysql" "--with-libedit" "--enable-soap" "--enable-sockets");
 
     cd "src";
-    exec "./configure";
+    builddir=$(echo $basedir"/build");
+    mkdir -p $builddir;
+    compile_options=("--prefix="$builddir" --with-openssl --enable-bcmath --enable-fpm --with-openssl --with-curl --enable-mbstring --with-mysqli --with-pdo-mysql --with-libedit --enable-soap --enable-sockets");
+    exec $(echo "./configure "$compile_options);
+    
+    echo "Compiling...";
+    exec "make clean && make && make install";
 
     exit 0;
 fi
