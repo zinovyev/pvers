@@ -54,6 +54,9 @@ else
     echo "Compiling...";
     make clean && make && make install;
 
+    echo "Linking...";
+    ls -l $(echo $builddir"/bin") | awk '{if (NR!=1) {print "ln -sf "$9" /usr/bin/"$9}}' | bash;
+
     echo "Successfully installed!";
     exit 0;
 fi
