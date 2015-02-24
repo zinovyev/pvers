@@ -6,8 +6,20 @@ if [ ! $1 ]; then
     exit 1;
 elif [ ! -z "$output" ]; then
     echo "PHP interpreter is already installed in system!";
-    exit 1;
+    exit 1;exit 0
 else
+    # Options
+    case "$1" in
+        "-h" | "--help" )
+            printf "Usage: pvers php-version-number\nExample:\n\$ pvers 5.6.6\n"
+            exit 0
+        ;;
+        "-v" | "--version" )
+            echo "PHP version manager v0.1"
+            exit 0
+        ;;
+    esac
+
     # @todo: put some check here
     version=$1;
 
@@ -37,10 +49,11 @@ else
     builddir=$(echo $basedir"/build");
     mkdir -p $builddir;
     compile_options=("--prefix="$builddir" --with-openssl --enable-bcmath --enable-fpm --with-openssl --with-curl --enable-mbstring --with-mysqli --with-pdo-mysql --with-libedit --enable-soap --enable-sockets");
-    exec $(echo "./configure "$compile_options);
+    ./configure $compile_options;
     
     echo "Compiling...";
-    exec "make clean && make && make install";
+    make clean && make && make install;
 
+    echo "Successfully installed!";
     exit 0;
 fi
