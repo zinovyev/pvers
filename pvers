@@ -8,6 +8,32 @@ elif [ ! -z "$output" ]; then
     echo "PHP interpreter is already installed in system!";
     exit 1;
 else
-    echo "Installing..."
+    # @todo: put some check here
+    version=$1;
+
+    echo "Downloading...";
+
+    basedir="/usr/share/pvers/"$version;
+    if [ -d $basedir ]; then
+        mkdir -p `echo $basedir`;
+    fi
+
+    cd $basedir;
+    archive=$(echo "php-"$version".tar.bz2");
+    echo "http://ru2.php.net/get/"$archive"/from/this/mirror";
+    wget -q $(echo "http://ru2.php.net/get/"$archive"/from/this/mirror");
+
+    echo "Extracting...";
+
+    mv mirror $(echo $archive);
+    tar xjf $(echo $archive);
+    mv $(echo "php-"$version) src;
+    rm $(echo $archive);
+
+    echo "Compiling...";
+
+    cd "src";
+    exec "./configure";
+
     exit 0;
-fi;
+fi
