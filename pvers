@@ -1,96 +1,129 @@
 #! /usr/bin/env bash
 
-output=$(php -v 2>/dev/null)
-if [ ! $1 ]; then
-    echo "You must provide the PHP version first!"
-    exit 1
-elif [[ ! -z "$output" ]] && [[ ! -d /usr/share/pvers ]]; then
-    echo "Another PHP interpreter is already installed in your system!"
-    exit 1
-else
-    # Options
-    case "$1" in
-        "-h" | "--help" )
-            printf "Usage: pvers php-version-number\nExample:\n\$ pvers 5.6.6\n"
-            exit 0
-        ;;
-        "-v" | "--version" )
-            echo "PHP version manager v0.1"
-            exit 0
-        ;;
-        "-l" | "--list" )
-            ls -l /usr/share/pvers | awk '{if (NR>1) {print $9}}'
-            exit 0
-        ;;
-        "-d" | "--delete" )
-            if [ ! $2 ];  then
-                echo "You must specify a PHP version you want to delete."
-            elif [ ! -d "/usr/share/pvers/"$2 ] ; then
-                echo "PHP version "$2" is not installed on your system."
-            else
-                while true; do
-                    read -p "Do you really want to delete php-"$2" from your computer? [Y/n] " yn
-                    case $yn in
-                        [Yy]* ) rm -rf "/usr/share/pvers/"$2; exit 0;;
-                        [Nn]* ) exit 0;;
-                        *) echo "Your answer should be directly Y or n!" ;;
-                    esac
-                done
+function main {
+    # is_root $0
+
+        # Options
+        case "$1" in
+            "-h" | "--help" )
+                printf "Usage: pvers php-version-number\nExample:\n\$ pvers 5.6.6\n"
+                exit 0
+            ;;
+            "-v" | "--version" )
+                echo "PHP version manager v0.1"
+                exit 0
+            ;;
+            "-l" | "--list" )
+                ls -l /usr/share/pvers | awk '{if (NR>1) {print $9}}'
+                exit 0
+            ;;
+            "-d" | "--delete" )
+                if [ ! $2 ];  then
+                    echo "You must specify a PHP version you want to delete."
+                elif [ ! -d "/usr/share/pvers/"$2 ] ; then
+                    echo "PHP version "$2" is not installed on your system."
+                else
+                    while true; do
+                        read -p "Do you really want to delete php-"$2" from your computer? [Y/n] " yn
+                        case $yn in
+                            [Yy]* ) rm -rf "/usr/share/pvers/"$2; exit 0;;
+                            [Nn]* ) exit 0;;
+                            *) echo "Your answer should be directly Y or n!" ;;
+                        esac
+                    done
+                fi
+
+                # while true; do
+
+                # done
+                exit 0 
+        esac
+
+
+
+    output=$(php -v 2>/dev/null)
+    if [ ! $1 ]; then
+        echo "You must provide the PHP version first!"
+        exit 1
+    elif [[ ! -z "$output" ]] && [[ ! -d /usr/share/pvers ]]; then
+        echo "Another PHP interpreter is already installed in your system!"
+        exit 1
+    else
+
+        # @todo: put some check here
+        version=$1;
+
+        # Init pathes
+        basedir="/usr/share/pvers/"$version
+        archive=$(echo "php-"$version".tar.bz2")
+        builddir=$(echo $basedir"/build")
+
+        # Download && Compile
+        if [ ! -d $basedir ]; then
+            echo "Downloading..."
+            mkdir -p `echo $basedir`
+            cd $basedir;
+
+            if [[ ! -d $basedir ]] || [[ $basedir != $(pwd) ]]; then
+                echo "Can not create directory! Try running as su."
+                exit 1
             fi
 
-            # while true; do
+            echo "http://ru2.php.net/get/"$archive"/from/this/mirror"
+            wget -q $(echo "http://ru2.php.net/get/"$archive"/from/this/mirror")
 
-            # done
-            exit 0 
-    esac
+            echo "Extracting..."
 
-    # @todo: put some check here
-    version=$1;
+            mv mirror $(echo $archive)
+            tar xjf $(echo $archive)
+            mv $(echo "php-"$version) src
+            rm $(echo $archive)
 
-    # Init pathes
-    basedir="/usr/share/pvers/"$version
-    archive=$(echo "php-"$version".tar.bz2")
-    builddir=$(echo $basedir"/build")
+            echo "Configuring..."
+            # compile_options=("--with-openssl" "--enable-bcmath" "--enable-fpm" "--with-openssl" "--with-curl" "--enable-mbstring" "--with-mysqli" "--with-pdo-mysql" "--with-libedit" "--enable-soap" "--enable-sockets");
 
-    # Download && Compile
-    if [ ! -d $basedir ]; then
-        echo "Downloading..."
-        mkdir -p `echo $basedir`
-        cd $basedir;
+            cd "src"
+            compile_options=("--prefix="$builddir" --with-openssl --enable-bcmath --enable-fpm --with-openssl --with-curl --enable-mbstring --with-mysqli --with-pdo-mysql --with-libedit --enable-soap --enable-sockets")
+            ./configure $compile_options
+            
+            echo "Compiling..."
+            make clean && make && make install
 
-        if [[ ! -d $basedir ]] || [[ $basedir != $(pwd) ]]; then
-            echo "Can not create directory! Try running as su."
-            exit 1
+            echo "Successfully installed!"
         fi
 
-        echo "http://ru2.php.net/get/"$archive"/from/this/mirror"
-        wget -q $(echo "http://ru2.php.net/get/"$archive"/from/this/mirror")
+        # Linking
+        echo "Linking..."
+        cd $basedir
+        ls -l $(echo $builddir"/bin") | awk -v bp=$builddir '{if (NR!=1) {print "ln -sf "bp"/bin/"$9" /usr/bin/"$9}}' | bash
 
-        echo "Extracting..."
-
-        mv mirror $(echo $archive)
-        tar xjf $(echo $archive)
-        mv $(echo "php-"$version) src
-        rm $(echo $archive)
-
-        echo "Configuring..."
-        # compile_options=("--with-openssl" "--enable-bcmath" "--enable-fpm" "--with-openssl" "--with-curl" "--enable-mbstring" "--with-mysqli" "--with-pdo-mysql" "--with-libedit" "--enable-soap" "--enable-sockets");
-
-        cd "src"
-        compile_options=("--prefix="$builddir" --with-openssl --enable-bcmath --enable-fpm --with-openssl --with-curl --enable-mbstring --with-mysqli --with-pdo-mysql --with-libedit --enable-soap --enable-sockets")
-        ./configure $compile_options
-        
-        echo "Compiling..."
-        make clean && make && make install
-
-        echo "Successfully installed!"
+        echo "Current PHP version is "$version
+        exit 0
     fi
 
-    # Linking
-    echo "Linking..."
-    cd $basedir
-    ls -l $(echo $builddir"/bin") | awk -v bp=$builddir '{if (NR!=1) {print "ln -sf "bp"/bin/"$9" /usr/bin/"$9}}' | bash
+}
 
-    echo "Current PHP version is "$version
-    exit 0
-fi
+# Check if user is root
+function is_root {
+    if [ $(id -u) != "1" ]; then
+        echo "Should be run as root only!"
+        exit 1
+    fi
+}
+
+# Check if php version exists (locally or remote)
+function exists {
+    echo $1
+}
+
+# Get current php version
+function current {
+    echo $1
+}
+
+# Save dir hash after successfull install
+function save_hash {
+    echo $1
+}
+
+main $@
