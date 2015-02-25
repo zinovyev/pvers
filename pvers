@@ -31,75 +31,74 @@ function main {
             fi
             exit 0 
         ;;
-        * )
+        * ) # Installation
             is_root
+
+            # Check version
+            if [[ ! $1 =~ ^5\.[0-9]{1}\.{0,1}[0-9]{0,2}$ ]]; then
+                printf "You should provide a correct PHP version (5.0 and above).\n"\
+                "Use '-n' or '--help' flag to get help.\n"
+                exit 1
+            else
+                version=$1
+            fi
+
+            # Check if another PHP version exists in a system
+            if [[ ! -z "$output" ]] && [[ ! -d /usr/share/pvers ]]; then
+                echo "Another PHP interpreter is already installed in your system!"
+                exit 1
+            fi
+
+            # Init pathes
+            basedir="/usr/share/pvers/"$version
+            archive=$(echo "php-"$version".tar.bz2")
+            builddir=$(echo $basedir"/build")
+
+            # Download && Compile
+            if [ ! -d $basedir ]; then
+                echo "Downloading..."
+                mkdir -p `echo $basedir`
+                cd $basedir;
+
+                if [[ ! -d $basedir ]] || [[ $basedir != $(pwd) ]]; then
+                    echo "Can not create directory! Try running as su."
+                    exit 1
+                fi
+
+                echo "http://ru2.php.net/get/"$archive"/from/this/mirror"
+                wget -q $(echo "http://ru2.php.net/get/"$archive"/from/this/mirror")
+
+                echo "Extracting..."
+
+                mv mirror $(echo $archive)
+                tar xjf $(echo $archive)
+                mv $(echo "php-"$version) src
+                rm $(echo $archive)
+
+                echo "Configuring..."
+                # compile_options=("--with-openssl" "--enable-bcmath" "--enable-fpm" "--with-openssl" "--with-curl" "--enable-mbstring" "--with-mysqli" "--with-pdo-mysql" "--with-libedit" "--enable-soap" "--enable-sockets");
+
+                cd "src"
+                compile_options=("--prefix="$builddir" --with-openssl --enable-bcmath --enable-fpm --with-openssl --with-curl --enable-mbstring --with-mysqli --with-pdo-mysql --with-libedit --enable-soap --enable-sockets")
+                ./configure $compile_options
+                
+                echo "Compiling..."
+                make clean && make && make install
+
+                echo "Successfully installed!"
+            fi
+
+            # Linking
+            echo "Linking..."
+            cd $basedir
+            ls -l $(echo $builddir"/bin") | awk -v bp=$builddir '{if (NR!=1) {print "ln -sf "bp"/bin/"$9" /usr/bin/"$9}}' | bash
+
+            echo "Current PHP version is "$version
+            exit 0
+
             help; exit 0
         ;;
     esac
-
-
-    # output=$(php -v 2>/dev/null)
-    # if [ ! $1 ]; then
-    #     echo "You must provide the PHP version first!"
-    #     exit 1
-    # elif [[ ! -z "$output" ]] && [[ ! -d /usr/share/pvers ]]; then
-    #     echo "Another PHP interpreter is already installed in your system!"
-    #     exit 1
-    # else
-
-    #     # @todo: put some check here
-    #     version=$1;
-
-    #     # Init pathes
-    #     basedir="/usr/share/pvers/"$version
-    #     archive=$(echo "php-"$version".tar.bz2")
-    #     builddir=$(echo $basedir"/build")
-
-    #     # Download && Compile
-    #     if [ ! -d $basedir ]; then
-    #         echo "Downloading..."
-    #         mkdir -p `echo $basedir`
-    #         cd $basedir;
-
-    #         if [[ ! -d $basedir ]] || [[ $basedir != $(pwd) ]]; then
-    #             echo "Can not create directory! Try running as su."
-    #             exit 1
-    #         fi
-
-    #         echo "http://ru2.php.net/get/"$archive"/from/this/mirror"
-    #         wget -q $(echo "http://ru2.php.net/get/"$archive"/from/this/mirror")
-
-    #         echo "Extracting..."
-
-    #         mv mirror $(echo $archive)
-    #         tar xjf $(echo $archive)
-    #         mv $(echo "php-"$version) src
-    #         rm $(echo $archive)
-
-    #         echo "Configuring..."
-    #         # compile_options=("--with-openssl" "--enable-bcmath" "--enable-fpm" "--with-openssl" "--with-curl" "--enable-mbstring" "--with-mysqli" "--with-pdo-mysql" "--with-libedit" "--enable-soap" "--enable-sockets");
-
-    #         cd "src"
-    #         compile_options=("--prefix="$builddir" --with-openssl --enable-bcmath --enable-fpm --with-openssl --with-curl --enable-mbstring --with-mysqli --with-pdo-mysql --with-libedit --enable-soap --enable-sockets")
-    #         ./configure $compile_options
-            
-    #         echo "Compiling..."
-    #         make clean && make && make install
-
-    #         echo "Successfully installed!"
-    #     fi
-
-    #     # Linking
-    #     echo "Linking..."
-    #     cd $basedir
-    #     ls -l $(echo $builddir"/bin") | awk -v bp=$builddir '{if (NR!=1) {print "ln -sf "bp"/bin/"$9" /usr/bin/"$9}}' | bash
-
-    #     echo "Current PHP version is "$version
-    #     exit 0
-    # fi
-
-
-
 }
 
 # Print help info
@@ -112,7 +111,7 @@ function help {
     "-v or --version     Print pvers version."\
     "-l or --list        List locally installed PHP versions."\
     "-d or --delete      Remove locally installed PHP version (as root only)."
-    printf "To install or select (if already installed) PHP of version 5.6.6 type:\n%s\n"\
+    printf "To install or select (if already installed) PHP of version 5.6.6 type:\n\n%s\n\n"\
     "$ pvers 5.6.6"
 }
 
@@ -123,15 +122,24 @@ function version {
 
 # Check if user is root
 function is_root {
-    if [ $(id -u) != "1" ]; then
+    if [ $(id -u) != "0" ]; then
         printf "Run this script as root to use this option!\nUse '-n' or '--help' flag to get help.\n"
         exit 1
     fi
 }
 
+# Check if provided version is correct
+function check_version {
+    return false
+}
+
 # Check if php version exists (locally or remote)
 function exists {
     echo $1
+}
+
+function mirror {
+    echo 123;
 }
 
 # Get current php version
