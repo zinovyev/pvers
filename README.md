@@ -12,18 +12,19 @@ $ rm -rf pvers
 
 ## Usage
 
-*pvers [ options ... ] [php-version]*
+*pvers [ option ... ] [php-version]*
 
 
 Where options are:
+
+
     -h or --help        Print this message.
 
     -v or --version     Print pvers version.
 
     -l or --list        List locally installed PHP versions.
-    
+
     -d or --delete      Remove locally installed PHP version (as root only).
-To install or select (if already installed) PHP of version 5.6.6 type:
 
 
 *To install or select (if already installed) PHP of version 5.6.6 type:*
