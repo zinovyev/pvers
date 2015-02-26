@@ -146,9 +146,10 @@ function help {
     "-v or --version     Print pvers version."\
     "-l or --list        List locally installed PHP versions."\
     "-d or --delete      Remove locally installed PHP version (as root only)."
-    # --force
-    # --global
-    # --recompile all
+    # -f or --force
+    # -g or --global
+    # -r or --recompile all
+    # -vv or --verbose
     printf "To install or select (if already installed) PHP of version 5.6.6 type:\n\n%s\n\n"\
     "$ pvers 5.6.6"
 }
