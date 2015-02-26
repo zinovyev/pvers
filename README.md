@@ -18,7 +18,7 @@ $ rm -rf pvers
 Where options are:
 
 
-    -h or --help        Print this message.
+    -h or --help        Print help message.
 
     -v or --version     Print pvers version.
 
