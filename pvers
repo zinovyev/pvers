@@ -10,7 +10,8 @@ function main {
             version; exit 0
         ;;
         "-l" | "--list" )
-            ls -l /usr/share/pvers | awk '{if (NR>1) {print $9}}'
+            current=`ls -l /usr/share/pvers | awk '{if ($9=="current") {print $11}}' | awk -F/ '{print $5}'`
+            ls -l /usr/share/pvers | awk -v cr=$current '{if (NR>1 && $9!="current" && $9!=cr) {print $9} else if ($9==cr) {print $9" [*]"}}'
             exit 0
         ;;
         "-d" | "--delete" )
