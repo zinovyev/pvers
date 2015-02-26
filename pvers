@@ -30,7 +30,7 @@ function main {
                     esac
                 done
             fi
-            exit 0 
+            exit 0
         ;;
         * ) # Installation
             is_root
@@ -56,6 +56,7 @@ function main {
             srcdir=$(echo $basedir"/src")
             builddir=$(echo $basedir"/build")
             currdir="/usr/share/pvers/current"
+            confpath="/etc/php"
 
             # Download && Compile
             if [ ! -d $basedir ]; then
@@ -93,7 +94,7 @@ function main {
                 # compile_options=("--with-openssl" "--enable-bcmath" "--enable-fpm" "--with-openssl" "--with-curl" "--enable-mbstring" "--with-mysqli" "--with-pdo-mysql" "--with-libedit" "--enable-soap" "--enable-sockets");
                 
                 compile_options=("--prefix="$builddir"\
-                    --with-config-file-path=/etc/php/php.ini\
+                    --with-config-file-path="$confpath"\
                     --with-openssl\
                     --enable-bcmath\
                     --enable-fpm\
