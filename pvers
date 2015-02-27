@@ -12,15 +12,13 @@ function main {
     # Check options
     case "$1" in
         "-h" | "--help" )
-            help; exit 0
+            c_help; exit 0
         ;;
         "-v" | "--version" )
-            version; exit 0
+            c_version; exit 0
         ;;
         "-l" | "--list" )
-            current=`ls -l /usr/share/pvers | awk '{if ($9=="current") {print $11}}' | awk -F/ '{print $5}'`
-            ls -l /usr/share/pvers | awk -v cr=$current '{if (NR>1 && $9!="current" && $9!=cr) {print $9} else if ($9==cr) {print $9" [*]"}}'
-            exit 0
+            c_list; exit 0
         ;;
         "-d" | "--delete" )
             is_root
@@ -163,9 +161,15 @@ function main {
     esac
 }
 
+# Command: print current version
+function c_version {
+    version="0.6"
+    printf "pvers (PHP version manager) v"$version"\n"
+}
+
 # Print help info
-function help {
-    printf "Usage: %s\n"\
+function c_help {
+    printf "\nUsage: %s\n"\
     "pvers [ options ... ] [php-version]"
     printf "Where options are:\n"
     printf "    %s\n"\
@@ -181,9 +185,25 @@ function help {
     "$ pvers 5.6.6"
 }
 
-# Version
-function version {
-    printf "pvers (PHP version manager) v0.6\n"
+# Command: list installed versions
+function c_list {
+    current=`ls -l /usr/share/pvers | awk '{if ($9=="current") {print $11}}' | awk -F/ '{print $5}'`
+    ls -l /usr/share/pvers | awk -v cr=$current '{if (NR>1 && $9!="current" && $9!=cr) {print $9} else if ($9==cr) {print $9" [*]"}}'
+}
+
+# Command: build new PHP version
+function c_install {
+    echo 'todo'
+}
+
+# Command: select existing PHP version
+function c_select {
+    echo 'todo'
+}
+
+# Command: delete existing PHP version
+function c_delete {
+    echo 'todo'
 }
 
 # Check if user is root
@@ -195,27 +215,17 @@ function is_root {
 }
 
 # @todo Check and fix php version
-function php-version {
+function check_php_version {
     echo 'todo'
 }
 
 # @todo Check if php version exists (locally or remote)
-function exists {
+function check_version_installed {
     echo 'todo'
 }
 
 # @todo Select a mirror
-function mirror {
-    echo 'todo'
-}
-
-# @todo Get currently used php version
-function current {
-    echo 'todo'
-}
-
-# @todo Save dir (base dir with php sources) hash after successfull install
-function save_hash {
+function get_mirrors {
     echo 'todo'
 }
 
