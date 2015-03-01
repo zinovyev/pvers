@@ -40,15 +40,7 @@ function main {
         ;;
         * ) # Installation
             is_root
-
-            # Check version
-            if [[ ! $1 =~ ^5\.[0-9]{1}\.{0,1}[0-9]{0,2}$ ]]; then
-                printf "You should provide a correct PHP version (5.0 and above).\n"\
-                "Use '-h' or '--help' flag to get help.\n"
-                exit 1
-            else
-                version=$1
-            fi
+            version=$(correct_php_version $1)
 
             # Check if another PHP version exists in a system
             if [[ ! -z `php -v 2>/dev/null` ]] && [[ ! -d /usr/share/pvers ]]; then
@@ -215,8 +207,35 @@ function is_root {
 }
 
 # @todo Check and fix php version
-function check_php_version {
-    echo 'todo'
+function correct_php_version {
+    if [[ ! $1 =~ ^5\.[0-9]{1}\.{0,1}[0-9]{0,2}$ ]]; then
+        printf "You should provide a correct PHP version (5.0 and above).\n"\
+        "Use '-h' or '--help' flag to get help.\n"
+        exit 1
+    else
+        # Check and fix version number
+        major=$(echo $1 | awk -F. '{print $2}')
+        minor=$(echo $1 | awk -F. '{print $3}')
+
+        # Fix minor version
+        if [[ -z $minor ]]; then
+            case $major in
+                "0" ) minor=5;;
+                "1" ) minor=6;;
+                "2" ) minor=17;;
+                "3" ) minor=29;;
+                "4" ) minor=38;;
+                "5" ) minor=22;;
+                "6" ) minor=6;;
+                "*" ) "Wrong major version (should be 0-6)!"; exit 1 ;;
+            esac
+            version="5."$major"."$minor
+        else
+            version=$1
+        fi
+
+        echop $version
+    fi
 }
 
 # @todo Check if php version exists (locally or remote)
