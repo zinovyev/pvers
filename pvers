@@ -52,7 +52,7 @@ function main {
 
 # Command: print current version
 function c_version {
-    version="0.6"
+    version="0.7"
     printf "pvers (PHP version manager) v"$version"\n"
 }
 
