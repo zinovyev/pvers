@@ -21,32 +21,11 @@ function main {
             c_list; exit 0
         ;;
         "-d" | "--delete" )
-            is_root
-            if [ ! $2 ];  then
-                echo "You must specify a PHP version you want to delete."
-            elif [ ! -d "/usr/share/pvers/"$2 ] ; then
-                echo "PHP version "$2" is not installed on your system."
-            else
-                while true; do
-                    read -p "Do you really want to delete php-"$2" from your computer? [Y/n] " yn
-                    case $yn in
-                        [Yy]* ) rm -rf "/usr/share/pvers/"$2; exit 0;;
-                        [Nn]* ) exit 0;;
-                        *) echo "Your answer should be directly Y or n!" ;;
-                    esac
-                done
-            fi
-            exit 0
+            is_root; c_delete; exit 0
         ;;
         * ) # Installation
             is_root
             version=$(correct_php_version $1)
-
-            # Check if another PHP version exists in a system
-            if [[ ! -z `php -v 2>/dev/null` ]] && [[ ! -d /usr/share/pvers ]]; then
-                echo "Another PHP interpreter is already installed in your system!"
-                exit 1
-            fi
 
             # Init pathes
             basedir="/usr/share/pvers/"$version
@@ -56,99 +35,13 @@ function main {
             currdir="/usr/share/pvers/current"
             confpath="/etc/php"
 
-            # Check if a wanted version is marked as an old release or not
-            oldest_version="3" # For PHP-5.3
-            wanted_version=$(echo $version | sed 's/5\.\([0-9]\{1,2\}\)\.[0-9]\{1,2\}/\1/')
-            if [[ $wanted_version -le $oldest_version ]]; then
+            # Install given version
+            c_install $version
 
-                while true; do
-                    read -p "You have selected an old version of PHP. It support is highly experimental. Really want to continue? [Y/n] " yn
-                    case $yn in
-                        [Yy]* ) break;;
-                        [Nn]* ) exit 0;;
-                        *) echo "Your answer should be directly Y or n!" ;;
-                    esac
-                done
+            # Select given version
+            c_select $version
 
-                url="http://museum.php.net/php5/"$archive
-            else
-                url="http://ru2.php.net/get/"$archive"/from/this/mirror"
-            fi
-
-            # Download && Compile
-            if [ ! -d $basedir ]; then
-                echo "Downloading..."
-                mkdir -p `echo $basedir`
-                cd $basedir;
-
-                if [[ ! -d $basedir ]] || [[ $basedir != $(pwd) ]]; then
-                    echo "Can not create directory! Try running as su."
-                    exit 1
-                fi
-
-                wget -q $url
-
-                echo "Extracting..."
-
-                if [ -f mirror ]; then
-                    mv mirror $(echo $archive)
-                elif [ ! -f $archive ]; then
-                    rm -rf $basedir
-                    echo "Failed to download! Try another version."; exit 1
-                fi
-
-                tar xjf $(echo $archive)
-                mv $(echo "php-"$version) src
-                rm $(echo $archive)                
-
-                echo "Configure..."
-                cd src
-                compile_options=("-q\
-                    --prefix="$builddir"\
-                    --with-config-file-path="$confpath"\
-                    --with-openssl\
-                    --enable-bcmath\
-                    --enable-fpm\
-                    --with-openssl\
-                    --with-curl\
-                    --enable-mbstring\
-                    --with-mysqli\
-                    --with-pdo-mysql\
-                    --with-libedit\
-                    --enable-soap\
-                    --enable-sockets")
-                ./configure $compile_options
-                
-                echo "Compile..."
-                if [[ `uname` == "Linux" ]]; then
-                    # Try using as much cores as possible
-                    make -s -i -k clean 1>/dev/null 2>&1 ; make -s -i -k -j $(grep -c ^processor /proc/cpuinfo) && make -s -i -k install
-                else
-                    make -s -i -k clean 1>/dev/null 2>&1 ; make -s -i -k -j && make -s -i -k install
-                fi
-
-                # Applying php.ini
-                echo "Check php.ini..."
-                if [[ ! -f /etc/php/php.ini && -f $(echo $srcdir"/php.ini-production") ]]; then
-                    mkdir -p /etc/php/
-                    cp -f $(echo $srcdir"/php.ini-production") /etc/php/php.ini
-                fi
-
-                echo "Successfully installed!"
-            fi
-
-            # Linking
-            echo "Linking..."
-            cd $basedir
-
-            ln -sfT $builddir $currdir
-            ls -l $(echo $currdir"/bin") | awk -v bp=$currdir '{if (NR!=1) {print "ln -sf "bp"/bin/"$9" /usr/bin/"$9}}' | bash
-            ls -l $(echo $currdir"/sbin") | awk -v bp=$currdir '{if (NR!=1) {print "ln -sf "bp"/sbin/"$9" /usr/sbin/"$9}}' | bash
-
-            echo "Current PHP version is "$version
             exit 0
-
-            help; exit 0
         ;;
     esac
 }
@@ -185,17 +78,125 @@ function c_list {
 
 # Command: build new PHP version
 function c_install {
-    echo 'todo'
+    version=$1
+
+    # Check if another PHP version exists in a system
+    if [[ ! -z `php -v 2>/dev/null` ]] && [[ ! -d /usr/share/pvers ]]; then
+        echo "Another PHP interpreter is already installed in your system!"
+        exit 1
+    fi
+
+    # Check if a wanted version is marked as an old release or not
+    oldest_version="3" # For PHP-5.3
+    wanted_version=$(echo $version | sed 's/5\.\([0-9]\{1,2\}\)\.[0-9]\{1,2\}/\1/')
+    if [[ $wanted_version -le $oldest_version ]]; then
+
+        while true; do
+            read -p "You have selected an old version of PHP. It support is highly experimental. Really want to continue? [Y/n] " yn
+            case $yn in
+                [Yy]* ) break;;
+                [Nn]* ) exit 0;;
+                *) echo "Your answer should be directly Y or n!" ;;
+            esac
+        done
+
+        url="http://museum.php.net/php5/"$archive
+    else
+        url="http://ru2.php.net/get/"$archive"/from/this/mirror"
+    fi
+
+    # Download && Compile
+    if [ ! -d $basedir ]; then
+        echo "Downloading..."
+        mkdir -p `echo $basedir`
+        cd $basedir;
+
+        if [[ ! -d $basedir ]] || [[ $basedir != $(pwd) ]]; then
+            echo "Can not create directory! Try running as su."
+            exit 1
+        fi
+
+        wget -q $url
+
+        echo "Extracting..."
+
+        if [ -f mirror ]; then
+            mv mirror $(echo $archive)
+        elif [ ! -f $archive ]; then
+            rm -rf $basedir
+            echo "Failed to download! Try another version."; exit 1
+        fi
+
+        tar xjf $(echo $archive)
+        mv $(echo "php-"$version) src
+        rm $(echo $archive)                
+
+        echo "Configure..."
+        cd src
+        compile_options=("-q\
+            --prefix="$builddir"\
+            --with-config-file-path="$confpath"\
+            --with-openssl\
+            --enable-bcmath\
+            --enable-fpm\
+            --with-openssl\
+            --with-curl\
+            --enable-mbstring\
+            --with-mysqli\
+            --with-pdo-mysql\
+            --with-libedit\
+            --enable-soap\
+            --enable-sockets")
+        ./configure $compile_options
+        
+        echo "Compile..."
+        if [[ `uname` == "Linux" ]]; then
+            # Try using as much cores as possible
+            make -s -i -k clean 1>/dev/null 2>&1 ; make -s -i -k -j $(grep -c ^processor /proc/cpuinfo) && make -s -i -k install
+        else
+            make -s -i -k clean 1>/dev/null 2>&1 ; make -s -i -k -j && make -s -i -k install
+        fi
+
+        # Applying php.ini
+        echo "Check php.ini..."
+        if [[ ! -f /etc/php/php.ini && -f $(echo $srcdir"/php.ini-production") ]]; then
+            mkdir -p /etc/php/
+            cp -f $(echo $srcdir"/php.ini-production") /etc/php/php.ini
+        fi
+
+        echo "Successfully installed!"
+    fi
 }
 
 # Command: select existing PHP version
 function c_select {
-    echo 'todo'
+    # Linking
+    echo "Linking..."
+    cd $basedir
+
+    ln -sfT $builddir $currdir
+    ls -l $(echo $currdir"/bin") | awk -v bp=$currdir '{if (NR!=1) {print "ln -sf "bp"/bin/"$9" /usr/bin/"$9}}' | bash
+    ls -l $(echo $currdir"/sbin") | awk -v bp=$currdir '{if (NR!=1) {print "ln -sf "bp"/sbin/"$9" /usr/sbin/"$9}}' | bash
+
+    echo "Current PHP version is "$version
 }
 
 # Command: delete existing PHP version
 function c_delete {
-    echo 'todo'
+    if [ ! $1 ];  then
+        echo "You must specify a PHP version you want to delete."
+    elif [ ! -d "/usr/share/pvers/"$1 ] ; then
+        echo "PHP version "$1" is not installed on your system."
+    else
+        while true; do
+            read -p "Do you really want to delete php-"$1" from your computer? [Y/n] " yn
+            case $yn in
+                [Yy]* ) rm -rf "/usr/share/pvers/"$1; exit 0;;
+                [Nn]* ) exit 0;;
+                *) echo "Your answer should be directly Y or n!" ;;
+            esac
+        done
+    fi
 }
 
 # Check if user is root
@@ -234,7 +235,7 @@ function correct_php_version {
             version=$1
         fi
 
-        echop $version
+        echo $version
     fi
 }
 
