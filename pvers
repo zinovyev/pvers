@@ -21,11 +21,14 @@ function main {
             c_list; exit 0
         ;;
         "-d" | "--delete" )
-            is_root; c_delete; exit 0
-        ;;
-        * ) # Installation
             is_root
-            version=$(correct_php_version $1)
+            version=$(fix_php_version $2)
+            c_delete $version
+            exit 0
+        ;;
+        * ) # Install && select a version
+            is_root
+            version=$(fix_php_version $1)
 
             # Init pathes
             basedir="/usr/share/pvers/"$version
@@ -36,10 +39,10 @@ function main {
             confpath="/etc/php"
             fpm_confpath=$builddir"/etc"
 
-            # Install given version
+            # Install specific version
             c_install $version
 
-            # Select given version
+            # Select specific version
             c_select $version
 
             exit 0
@@ -132,7 +135,7 @@ function c_install {
         mv $(echo "php-"$version) src
         rm $(echo $archive)                
 
-        echo "Configure..."
+        echo "Configuring..."
         cd src
         compile_options=("-q\
             --prefix="$builddir"\
@@ -148,26 +151,27 @@ function c_install {
             --with-libedit\
             --enable-soap\
             --enable-sockets")
-        ./configure $compile_options
+        ./configure $compile_options >/dev/null 2>&1
         
-        echo "Compile..."
+        echo "Compiling..."
         if [[ `uname` == "Linux" ]]; then
             # Try using as much cores as possible
-            make -s -i -k clean 1>/dev/null 2>&1 ; make -s -i -k -j $(grep -c ^processor /proc/cpuinfo) && make -s -i -k install
+            make -s -i -k clean 1>/dev/null 2>&1 ; make -s -i -k -j $(grep -c ^processor /proc/cpuinfo) >/dev/null 2>&1 && make -s -i -k install >/dev/null 2>&1
         else
-            make -s -i -k clean 1>/dev/null 2>&1 ; make -s -i -k -j && make -s -i -k install
+            make -s -i -k clean 1>/dev/null 2>&1 ; make -s -i -k -j >/dev/null 2>&1 && make -s -i -k install >/dev/null 2>&1
         fi
 
         # Applying php.ini
-        echo "Check php.ini..."
+        echo "Applying php.ini..."
         if [[ ! -f /etc/php/php.ini && -f $(echo $srcdir"/php.ini-production") ]]; then
             mkdir -p /etc/php/
             cp -f $(echo $srcdir"/php.ini-production") /etc/php/php.ini
         fi
 
         # Create php-fpm.conf
-        if [[ -d $fpm_confpath ]] && [[ -f fpm_confpath"/php-fpm.conf.default" ]]; then
-            cp fpm_confpath"/php-fpm.conf.default" fpm_confpath"/php-fpm.conf"
+        echo "Applying php-fpm.conf..."
+        if [[ -d $fpm_confpath ]] && [[ -f $fpm_confpath"/php-fpm.conf.default" ]]; then
+            cp $fpm_confpath"/php-fpm.conf.default" $fpm_confpath"/php-fpm.conf"
         fi
 
         echo "Successfully installed!"
@@ -180,11 +184,22 @@ function c_select {
     echo "Linking..."
     cd $basedir
 
-    ln -sfT $builddir $currdir
-    ls -l $(echo $currdir"/bin") | awk -v bp=$currdir '{if (NR!=1) {print "ln -sf "bp"/bin/"$9" /usr/bin/"$9}}' | bash
-    ls -l $(echo $currdir"/sbin") | awk -v bp=$currdir '{if (NR!=1) {print "ln -sf "bp"/sbin/"$9" /usr/sbin/"$9}}' | bash
+    if [[ -d $builddir"/bin" ]] || [[ -d $builddir"/sbin" ]]; then
+        ln -sfT $builddir $currdir
+        paths=("/bin/pear" "/bin/peardev" "/bin/pecl" "/bin/phar" "/bin/phar.phar" "/bin/php" "/bin/php-cgi" "/bin/php-config" "/bin/phpize" "/sbin/php-fpm")
+        targdir="/usr"
 
-    echo "Current PHP version is "$version
+        for path in ${paths[@]}; do
+            if [[ -a $builddir$path ]]; then
+                ln -sf $builddir$path $targdir$path
+            else
+                rm $targdir$path
+            fi
+        done
+        echo "Current PHP version is "$version
+    else
+        echo "PHP of version "$version" is not installed or contains an error"
+    fi
 }
 
 # Command: delete existing PHP version
@@ -213,8 +228,8 @@ function is_root {
     fi
 }
 
-# @todo Check and fix php version
-function correct_php_version {
+# Check and fix php version
+function fix_php_version {
     if [[ ! $1 =~ ^5\.[0-9]{1}\.{0,1}[0-9]{0,2}$ ]]; then
         printf "You should provide a correct PHP version (5.0 and above).\n"\
         "Use '-h' or '--help' flag to get help.\n"
@@ -243,11 +258,6 @@ function correct_php_version {
 
         echo $version
     fi
-}
-
-# @todo Check if php version exists (locally or remote)
-function check_version_installed {
-    echo 'todo'
 }
 
 # @todo Select a mirror
