@@ -34,6 +34,7 @@ function main {
             builddir=$(echo $basedir"/build")
             currdir="/usr/share/pvers/current"
             confpath="/etc/php"
+            fpm_confpath=$builddir"/etc"
 
             # Install given version
             c_install $version
@@ -162,6 +163,11 @@ function c_install {
         if [[ ! -f /etc/php/php.ini && -f $(echo $srcdir"/php.ini-production") ]]; then
             mkdir -p /etc/php/
             cp -f $(echo $srcdir"/php.ini-production") /etc/php/php.ini
+        fi
+
+        # Create php-fpm.conf
+        if [[ -d $fpm_confpath ]] && [[ -f fpm_confpath"/php-fpm.conf.default" ]]; then
+            cp fpm_confpath"/php-fpm.conf.default" fpm_confpath"/php-fpm.conf"
         fi
 
         echo "Successfully installed!"
