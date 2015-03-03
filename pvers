@@ -9,45 +9,55 @@
 function main {
     verbose=false
 
-    # Check options
-    case "$1" in
-        "-h" | "--help" )
-            c_help; exit 0
-        ;;
-        "-v" | "--version" )
-            c_version; exit 0
-        ;;
-        "-l" | "--list" )
-            c_list; exit 0
-        ;;
-        "-d" | "--delete" )
-            is_root
-            version=$(fix_php_version $2)
-            c_delete $version
-            exit 0
-        ;;
-        * ) # Install && select a version
-            is_root
-            version=$(fix_php_version $1)
+    # Check input
+    arg_help=0
+    arg_version=0
+    arg_list=0
+    arg_delete=0
+    arg_verbose=0
+    arg_version=0
+    parse_input $@
+ 
 
-            # Init pathes
-            basedir="/usr/share/pvers/"$version
-            archive=$(echo "php-"$version".tar.bz2")
-            srcdir=$(echo $basedir"/src")
-            builddir=$(echo $basedir"/build")
-            currdir="/usr/share/pvers/current"
-            confpath="/etc/php"
-            fpm_confpath=$builddir"/etc"
+    # # Check options
+    # case "$1" in
+    #     "-h" | "--help" )
+    #         c_help; exit 0
+    #     ;;
+    #     "-v" | "--version" )
+    #         c_version; exit 0
+    #     ;;
+    #     "-l" | "--list" )
+    #         c_list; exit 0
+    #     ;;
+    #     "-d" | "--delete" )
+    #         is_root
+    #         version=$(fix_php_version $2)
+    #         c_delete $version
+    #         exit 0
+    #     ;;
+    #     * ) # Install && select a version
+    #         is_root
+    #         version=$(fix_php_version $1)
 
-            # Install specific version
-            c_install $version
+    #         # Init pathes
+    #         basedir="/usr/share/pvers/"$version
+    #         archive=$(echo "php-"$version".tar.bz2")
+    #         srcdir=$(echo $basedir"/src")
+    #         builddir=$(echo $basedir"/build")
+    #         currdir="/usr/share/pvers/current"
+    #         confpath="/etc/php"
+    #         fpm_confpath=$builddir"/etc"
 
-            # Select specific version
-            c_select $version
+    #         # Install specific version
+    #         c_install $version
 
-            exit 0
-        ;;
-    esac
+    #         # Select specific version
+    #         c_select $version
+
+    #         exit 0
+    #     ;;
+    # esac
 }
 
 # Command: print current version
@@ -218,6 +228,55 @@ function c_delete {
             esac
         done
     fi
+}
+
+function parse_input {
+
+    # Default values
+    arg_help=false
+    arg_version=false
+    arg_list=false
+    arg_delete=false
+    arg_verbose=false
+    arg_version=false
+    arg_install=false
+    arg_select=false
+
+    # Walk through all args, mark selected options
+    for arg in $@; do
+        case $arg in
+            "-h" | "--help" )
+                arg_help=true
+            ;;
+            "-v" | "--version" )
+                arg_version=true
+            ;;
+            "-l" | "--list" )
+                arg_list=true
+            ;;
+            "-d" | "--delete" )
+                arg_delete=true
+            ;;
+            "-i" | "--install" )
+                arg_install=true
+            ;;
+            "-s" | "--select" )
+                arg_select=true
+            ;;
+            "-vv" | "--verbose" )
+                arg_verbose=true
+            ;;
+            * )
+                if [[ $arg =~ ^5\.[0-9]{1}\.{0,1}[0-9]{0,2}$ ]]; then
+                    arg_version=$arg
+                fi
+            ;;
+        esac
+    done
+
+    echo $arg_version
+
+    exit 1
 }
 
 # Check if user is root
