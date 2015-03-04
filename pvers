@@ -33,7 +33,7 @@ function main {
     elif [[ $arg_delete == true ]]; then
         is_root
 
-        if [[ $(fix_php_version $arg_version) != 0 ]]; then
+        if [[ $arg_version == false ]]; then
             printf "You should provide a correct PHP version (5.0 and above).\n"\
             "Use '-h' or '--help' flag to get help.\n"
 
@@ -46,7 +46,7 @@ function main {
     elif [[ $arg_install == true ]]; then
         is_root
 
-        if [[ $(fix_php_version $@) != 0 ]]; then
+        if [[ $arg_version == false ]]; then
             printf "You should provide a correct PHP version (5.0 and above).\n"\
             "Use '-h' or '--help' flag to get help.\n"
 
@@ -59,7 +59,7 @@ function main {
     elif [[ $arg_select == true ]]; then
         is_root
 
-        if [[ $(fix_php_version $@) != 0 ]]; then
+        if [[ $arg_version == false ]]; then
             printf "You should provide a correct PHP version (5.0 and above).\n"\
             "Use '-h' or '--help' flag to get help.\n"
 
@@ -74,7 +74,7 @@ function main {
     elif [[ $arg_version != false ]]; then
         is_root
 
-        if [[ $(fix_php_version $arg_version) != 0 ]]; then
+        if [[ $arg_version == false ]]; then
             printf "You should provide a correct PHP version (5.0 and above).\n"\
             "Use '-h' or '--help' flag to get help.\n"
 
@@ -320,8 +320,9 @@ function parse_input {
                 arg_verbose=true
             ;;
             * )
-                if [[ $arg =~ ^5\.[0-9]{1}\.{0,1}[0-9]{0,2}$ ]]; then
-                    arg_version=$arg
+                if [ $(check_php_version $arg) == true ]; then
+                    arg_version=$(fix_php_version $arg)
+                    echo $arg_version; exit 1
                 fi
             ;;
         esac
@@ -336,34 +337,37 @@ function is_root {
     fi
 }
 
-# Check and fix php version
-function fix_php_version {
-    if [[ ! $arg_version =~ ^5\.[0-9]{1}\.{0,1}[0-9]{0,2}$ ]]; then
-        echo "1"; exit 1
-    else
-        # Check and fix version number
-        major=$(echo $arg_version | awk -F. '{print $2}')
-        minor=$(echo $arg_version | awk -F. '{print $3}')
-
-        # Fix minor version
-        if [[ -z $minor ]]; then
-            case $major in
-                "0" ) minor=5;;
-                "1" ) minor=6;;
-                "2" ) minor=17;;
-                "3" ) minor=29;;
-                "4" ) minor=38;;
-                "5" ) minor=22;;
-                "6" ) minor=6;;
-                "*" ) "Wrong major version (should be 0-6)!"; exit 1 ;;
-            esac
-            arg_version="5."$major"."$minor
-        else
-            arg_version=$arg_version
-        fi
+# Check if php version number is correct
+function check_php_version {
+    if [[ $1 =~ ^5\.[0-9]{1}\.{0,1}[0-9]{0,2}$ ]]; then
+        echo true; return 1
     fi
 
-    echo "0"; exit 0
+    echo false; return 0
+}
+
+# Fix php version number
+function fix_php_version {
+    # Parse version number
+    major=$(echo $1 | awk -F. '{print $2}')
+    minor=$(echo $1 | awk -F. '{print $3}')
+
+    # Fix minor version
+    if [[ -z $minor ]]; then
+        case $major in
+            "0" ) minor=5;;
+            "1" ) minor=6;;
+            "2" ) minor=17;;
+            "3" ) minor=29;;
+            "4" ) minor=38;;
+            "5" ) minor=22;;
+            "6" ) minor=6;;
+            "*" ) "Wrong major version (should be 0-6)!"; exit 1 ;;
+        esac
+        echo "5."$major"."$minor
+    else
+        echo $1
+    fi
 }
 
 # @todo Select a mirror
