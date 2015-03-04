@@ -19,6 +19,16 @@ function main {
     # Parse input values
     parse_input $@
 
+    # Init base pathes
+    # @todo Configuration file
+    basedir="/usr/share/pvers/"$arg_version
+    archive=$(echo "php-"$arg_version".tar.bz2")
+    srcdir=$(echo $basedir"/src")
+    builddir=$(echo $basedir"/build")
+    currdir="/usr/share/pvers/current"
+    confpath="/etc/php"
+    fpm_confpath=$builddir"/etc"
+
     # Routing
     # 
     if [[ $arg_help == true ]]; then
@@ -32,65 +42,25 @@ function main {
 
     elif [[ $arg_delete == true ]]; then
         is_root
-
-        if [[ $arg_version == false ]]; then
-            printf "You should provide a correct PHP version (5.0 and above).\n"\
-            "Use '-h' or '--help' flag to get help.\n"
-
-            exit 1
-        fi
-
+        require_php_version $arg_version
         c_delete $arg_version
         exit 0
 
     elif [[ $arg_install == true ]]; then
         is_root
-
-        if [[ $arg_version == false ]]; then
-            printf "You should provide a correct PHP version (5.0 and above).\n"\
-            "Use '-h' or '--help' flag to get help.\n"
-
-            exit 1
-        fi
-
+        require_php_version $arg_version
         c_install $arg_version
         exit 0
 
     elif [[ $arg_select == true ]]; then
         is_root
-
-        if [[ $arg_version == false ]]; then
-            printf "You should provide a correct PHP version (5.0 and above).\n"\
-            "Use '-h' or '--help' flag to get help.\n"
-
-            exit 1
-        fi
-
-        echo $arg_version; exit 1
-
+        require_php_version $arg_version
         c_select $arg_version
         exit 0
 
     elif [[ $arg_version != false ]]; then
         is_root
-
-        if [[ $arg_version == false ]]; then
-            printf "You should provide a correct PHP version (5.0 and above).\n"\
-            "Use '-h' or '--help' flag to get help.\n"
-
-            exit 1
-        fi
-
-        # Init base pathes
-        # @todo Configuration file
-        basedir="/usr/share/pvers/"$version
-        archive=$(echo "php-"$version".tar.bz2")
-        srcdir=$(echo $basedir"/src")
-        builddir=$(echo $basedir"/build")
-        currdir="/usr/share/pvers/current"
-        confpath="/etc/php"
-        fpm_confpath=$builddir"/etc"
-
+        require_php_version $arg_version
         c_install $arg_version
         c_select $arg_version
         exit 0
@@ -237,13 +207,11 @@ function c_select {
     # Linking
     echo "Linking..."
 
-    echo $1
-    # version=$1
     success=true
     if [[ -d $basedir ]] && [[ -d $builddir ]]; then
         cd $basedir
     else
-        echo "PHP of version "$version" is not installed or installation contains an error"
+        echo "PHP of version "$arg_version" is not installed or installation contains an error"
         exit 1
     fi
 
@@ -259,9 +227,9 @@ function c_select {
                 rm $targdir$path
             fi
         done
-        echo "Current PHP version is "$version
+        echo "Current PHP version is "$arg_version
     else
-        echo "PHP of version "$version" is not installed or installation contains an error"
+        echo "PHP of version "$arg_version" is not installed or installation contains an error"
         exit 1
     fi
 }
@@ -320,9 +288,8 @@ function parse_input {
                 arg_verbose=true
             ;;
             * )
-                if [ $(check_php_version $arg) == true ]; then
+                if [ $(check_php_version $arg) == true ] && [[ $arg_version == false ]]; then
                     arg_version=$(fix_php_version $arg)
-                    echo $arg_version; exit 1
                 fi
             ;;
         esac
@@ -333,6 +300,15 @@ function parse_input {
 function is_root {
     if [ $(id -u) != "0" ]; then
         printf "Run this script as root to use this option!\nUse '-h' or '--help' flag to get help.\n"
+        exit 1
+    fi
+}
+
+function require_php_version {
+    if [[ $1 == false ]]; then
+        printf "You should provide a correct PHP version (5.0 and above).\n"\
+        "Use '-h' or '--help' flag to get help.\n"
+
         exit 1
     fi
 }
