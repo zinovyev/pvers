@@ -87,8 +87,8 @@ function c_help {
     "-v or --version     Print pvers version."\
     "-l or --list        List locally installed PHP versions."\
     "-d or --delete      Remove locally installed PHP version (as root only)."\
-    "-i or --delete      Install (only) PHP of given version (as root only)."\
-    "-s or --delete      Select (only) PHP of given version (as root only)."\
+    "-i or --install     Install (only) PHP of given version (as root only)."\
+    "-s or --select      Select (only) PHP of given version (as root only)."\
     "-vv or --verbose    Verbose output (show all warnings and errors)."
 
     # -f or --force
@@ -144,7 +144,13 @@ function c_install {
             exit 1
         fi
 
-        wget -q $url
+        # Detect verbosity
+        #
+        if [[ $arg_verbose != true ]]; then
+            wget -q $url >/dev/null 2>&1
+        else
+            wget $url
+        fi
 
         echo "Extracting..."
 
@@ -155,14 +161,20 @@ function c_install {
             echo "Failed to download! Try another version."; exit 1
         fi
 
-        tar xjf $(echo $archive)
+        # Detect verbosity
+        #
+        if [[ $arg_verbose != true ]]; then
+            tar xjf $(echo $archive)
+        else
+            tar xvjf $(echo $archive)
+        fi
+
         mv $(echo "php-"$version) src
         rm $(echo $archive)                
 
         echo "Configuring..."
         cd src
-        compile_options=("-q\
-            --prefix="$builddir"\
+        compile_options=("--prefix="$builddir"\
             --with-config-file-path="$confpath"\
             --with-openssl\
             --enable-bcmath\
@@ -175,14 +187,37 @@ function c_install {
             --with-libedit\
             --enable-soap\
             --enable-sockets")
-        ./configure $compile_options >/dev/null 2>&1
+
+        # Detect verbosity
+        #
+        if [[ $arg_verbose != true ]]; then
+            ./configure $compile_options -q >/dev/null 2>&1
+        else
+            ./configure $compile_options
+        fi
         
         echo "Compiling..."
         if [[ `uname` == "Linux" ]]; then
-            # Try using as much cores as possible
-            make -s -i -k clean 1>/dev/null 2>&1 ; make -s -i -k -j $(grep -c ^processor /proc/cpuinfo) >/dev/null 2>&1 && make -s -i -k install >/dev/null 2>&1
+
+            # Detect verbosity
+            #
+            if [[ $arg_verbose != true ]]; then
+                # Try using as much cores as possible
+                make -s -i -k clean 1>/dev/null 2>&1 ; make -s -i -k -j $(grep -c ^processor /proc/cpuinfo) >/dev/null 2>&1 && make -s -i -k install >/dev/null 2>&1
+            else
+                # Try using as much cores as possible
+                make -i -k clean ; make -i -k -j $(grep -c ^processor /proc/cpuinfo) && make -i -k install
+            fi
+
         else
-            make -s -i -k clean 1>/dev/null 2>&1 ; make -s -i -k -j >/dev/null 2>&1 && make -s -i -k install >/dev/null 2>&1
+
+            # Detect verbosity
+            #
+            if [[ $arg_verbose != true ]]; then
+                make -s -i -k clean 1>/dev/null 2>&1 ; make -s -i -k -j >/dev/null 2>&1 && make -s -i -k install >/dev/null 2>&1
+            else
+                make -i -k clean ; make -i -k -j && make -i -k install
+            fi
         fi
 
         # Applying php.ini
