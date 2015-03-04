@@ -1,68 +1,109 @@
 #! /usr/bin/env bash
 #
-# pvers v0.6
+# pvers v0.7.1
 # PHP Version Manager
 #  
 # Ivan Zinovyev <vanyazin@gmail.com>
 #
 
 function main {
-    verbose=false
+    # Default values
+    arg_help=false
+    arg_list=false
+    arg_delete=false
+    arg_verbose=false
+    arg_version=false
+    arg_install=false
+    arg_select=false
 
-    # Check input
-    arg_help=0
-    arg_version=0
-    arg_list=0
-    arg_delete=0
-    arg_verbose=0
-    arg_version=0
+    # Parse input values
     parse_input $@
- 
 
-    # # Check options
-    # case "$1" in
-    #     "-h" | "--help" )
-    #         c_help; exit 0
-    #     ;;
-    #     "-v" | "--version" )
-    #         c_version; exit 0
-    #     ;;
-    #     "-l" | "--list" )
-    #         c_list; exit 0
-    #     ;;
-    #     "-d" | "--delete" )
-    #         is_root
-    #         version=$(fix_php_version $2)
-    #         c_delete $version
-    #         exit 0
-    #     ;;
-    #     * ) # Install && select a version
-    #         is_root
-    #         version=$(fix_php_version $1)
+    # Routing
+    # 
+    if [[ $arg_help == true ]]; then
+        c_help; exit 0
 
-    #         # Init pathes
-    #         basedir="/usr/share/pvers/"$version
-    #         archive=$(echo "php-"$version".tar.bz2")
-    #         srcdir=$(echo $basedir"/src")
-    #         builddir=$(echo $basedir"/build")
-    #         currdir="/usr/share/pvers/current"
-    #         confpath="/etc/php"
-    #         fpm_confpath=$builddir"/etc"
+    elif [[ $arg_version == true ]]; then
+        c_version; exit 0
 
-    #         # Install specific version
-    #         c_install $version
+    elif [[ $arg_list == true ]]; then
+        c_list; exit 0
 
-    #         # Select specific version
-    #         c_select $version
+    elif [[ $arg_delete == true ]]; then
+        is_root
 
-    #         exit 0
-    #     ;;
-    # esac
+        if [[ $(fix_php_version $arg_version) != 0 ]]; then
+            printf "You should provide a correct PHP version (5.0 and above).\n"\
+            "Use '-h' or '--help' flag to get help.\n"
+
+            exit 1
+        fi
+
+        c_delete $arg_version
+        exit 0
+
+    elif [[ $arg_install == true ]]; then
+        is_root
+
+        if [[ $(fix_php_version $@) != 0 ]]; then
+            printf "You should provide a correct PHP version (5.0 and above).\n"\
+            "Use '-h' or '--help' flag to get help.\n"
+
+            exit 1
+        fi
+
+        c_install $arg_version
+        exit 0
+
+    elif [[ $arg_select == true ]]; then
+        is_root
+
+        if [[ $(fix_php_version $@) != 0 ]]; then
+            printf "You should provide a correct PHP version (5.0 and above).\n"\
+            "Use '-h' or '--help' flag to get help.\n"
+
+            exit 1
+        fi
+
+        echo $arg_version; exit 1
+
+        c_select $arg_version
+        exit 0
+
+    elif [[ $arg_version != false ]]; then
+        is_root
+
+        if [[ $(fix_php_version $arg_version) != 0 ]]; then
+            printf "You should provide a correct PHP version (5.0 and above).\n"\
+            "Use '-h' or '--help' flag to get help.\n"
+
+            exit 1
+        fi
+
+        # Init base pathes
+        # @todo Configuration file
+        basedir="/usr/share/pvers/"$version
+        archive=$(echo "php-"$version".tar.bz2")
+        srcdir=$(echo $basedir"/src")
+        builddir=$(echo $basedir"/build")
+        currdir="/usr/share/pvers/current"
+        confpath="/etc/php"
+        fpm_confpath=$builddir"/etc"
+
+        c_install $arg_version
+        c_select $arg_version
+        exit 0
+
+    else
+        c_help; exit 0
+
+    fi
 }
 
 # Command: print current version
 function c_version {
-    version="0.6"
+    version="0.7.1"
     printf "pvers (PHP version manager) v"$version"\n"
 }
 
@@ -76,7 +117,10 @@ function c_help {
     "-v or --version     Print pvers version."\
     "-l or --list        List locally installed PHP versions."\
     "-d or --delete      Remove locally installed PHP version (as root only)."\
+    "-i or --delete      Install (only) PHP of given version (as root only)."\
+    "-s or --delete      Select (only) PHP of given version (as root only)."\
     "-vv or --verbose    Verbose output (show all warnings and errors)."
+
     # -f or --force
     # -g or --global
     # -r or --recompile all    
@@ -192,7 +236,16 @@ function c_install {
 function c_select {
     # Linking
     echo "Linking..."
-    cd $basedir
+
+    echo $1
+    # version=$1
+    success=true
+    if [[ -d $basedir ]] && [[ -d $builddir ]]; then
+        cd $basedir
+    else
+        echo "PHP of version "$version" is not installed or installation contains an error"
+        exit 1
+    fi
 
     if [[ -d $builddir"/bin" ]] || [[ -d $builddir"/sbin" ]]; then
         ln -sfT $builddir $currdir
@@ -208,7 +261,8 @@ function c_select {
         done
         echo "Current PHP version is "$version
     else
-        echo "PHP of version "$version" is not installed or contains an error"
+        echo "PHP of version "$version" is not installed or installation contains an error"
+        exit 1
     fi
 }
 
@@ -234,7 +288,6 @@ function parse_input {
 
     # Default values
     arg_help=false
-    arg_version=false
     arg_list=false
     arg_delete=false
     arg_verbose=false
@@ -273,10 +326,6 @@ function parse_input {
             ;;
         esac
     done
-
-    echo $arg_version
-
-    exit 1
 }
 
 # Check if user is root
@@ -289,14 +338,12 @@ function is_root {
 
 # Check and fix php version
 function fix_php_version {
-    if [[ ! $1 =~ ^5\.[0-9]{1}\.{0,1}[0-9]{0,2}$ ]]; then
-        printf "You should provide a correct PHP version (5.0 and above).\n"\
-        "Use '-h' or '--help' flag to get help.\n"
-        exit 1
+    if [[ ! $arg_version =~ ^5\.[0-9]{1}\.{0,1}[0-9]{0,2}$ ]]; then
+        echo "1"; exit 1
     else
         # Check and fix version number
-        major=$(echo $1 | awk -F. '{print $2}')
-        minor=$(echo $1 | awk -F. '{print $3}')
+        major=$(echo $arg_version | awk -F. '{print $2}')
+        minor=$(echo $arg_version | awk -F. '{print $3}')
 
         # Fix minor version
         if [[ -z $minor ]]; then
@@ -310,13 +357,13 @@ function fix_php_version {
                 "6" ) minor=6;;
                 "*" ) "Wrong major version (should be 0-6)!"; exit 1 ;;
             esac
-            version="5."$major"."$minor
+            arg_version="5."$major"."$minor
         else
-            version=$1
+            arg_version=$arg_version
         fi
-
-        echo $version
     fi
+
+    echo "0"; exit 0
 }
 
 # @todo Select a mirror
