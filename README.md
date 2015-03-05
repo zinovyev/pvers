@@ -18,7 +18,7 @@ $ rm -rf pvers
 Where options are:
 
 
-    -h or --help        Print helo message.
+    -h or --help        Print help message.
 
     -v or --version     Print pvers version.
 
@@ -36,16 +36,17 @@ Where options are:
 ```sh
 $ pvers 5.6.6
 ```
-When neither '-i', nor '-s' flag is declared, a package will be first installed (if not already) and then selected (linked). So you can easy skip both of this flags.
+As you see, if neither '-i', nor '-s' flag are declared, a package will be first installed (if not already) and then selected (linked). So you can easy skip both of this flags.
 
 ## Example
+
 ```sh
 $ php -v
 PHP 5.6.6 (cli) (built: Feb 26 2015 10:51:33) 
 Copyright (c) 1997-2015 The PHP Group
 Zend Engine v2.6.0, Copyright (c) 1998-2015 Zend Technologies
 $ sudo pvers 5.3
-You're trying to install an old version of PHP. Its support is highly experimental. Really want to continue? [Y/n] Y
+You are trying to install an old version of PHP. Its support is highly experimental. Really want to continue? [Y/n] Y
 Linking...
 Current PHP version is 5.3.29
 $ php -v
