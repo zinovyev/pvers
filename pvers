@@ -120,7 +120,7 @@ function c_install {
     if [[ $wanted_version -le $oldest_version ]]; then
 
         while true; do
-            read -p "You have selected an old version of PHP. It support is highly experimental. Really want to continue? [Y/n] " yn
+            read -p "You're trying to install an old version of PHP. Its support is highly experimental. Really want to continue? [Y/n] " yn
             case $yn in
                 [Yy]* ) break;;
                 [Nn]* ) exit 0;;
