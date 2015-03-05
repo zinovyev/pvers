@@ -53,19 +53,12 @@ $ php -v
 PHP 5.3.29 (cli) (built: Mar  1 2015 13:34:21) 
 Copyright (c) 1997-2014 The PHP Group
 Zend Engine v2.3.0, Copyright (c) 1998-2014 Zend Technologies
-$ sudo pvers 5.6.6
-Linking...
-Current PHP version is 5.6.6
-$ php -v
-PHP 5.6.6 (cli) (built: Feb 26 2015 10:51:33) 
-Copyright (c) 1997-2015 The PHP Group
-Zend Engine v2.6.0, Copyright (c) 1998-2015 Zend Technologies
 $ pvers -l
-5.3.29
+5.3.29 [*]
 5.4.38
 5.5.22
 5.6.0
 5.6.1
 5.6.2
-5.6.6 [*]
+5.6.6
 ```
