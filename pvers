@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 #
-# pvers v0.7.5
+# pvers v0.7.6
 # PHP Version Manager
 #  
 # Ivan Zinovyev <vanyazin@gmail.com>
@@ -73,7 +73,7 @@ function main {
 
 # Command: print current version
 function c_version {
-    version="0.7.5"
+    version="0.7.6"
     printf "pvers (PHP version manager) v"$version"\n"
 }
 
@@ -113,7 +113,6 @@ function c_install {
         echo "Another PHP interpreter is already installed in your system!"
         exit 1
     fi
-
     # Check if a wanted version is marked as an old release or not
     oldest_version="3" # For PHP-5.3
     wanted_version=$(echo $version | sed 's/5\.\([0-9]\{1,2\}\)\.[0-9]\{1,2\}/\1/')
@@ -352,6 +351,8 @@ function require_php_version {
 function check_php_version {
     if [[ $1 =~ ^5\.[0-9]{1}\.{0,1}[0-9]{0,2}$ ]]; then
         echo true; return 1
+    elif [[ $1 == 'latest' ]]; then
+        echo true; return 1
     fi
 
     echo false; return 0
@@ -359,9 +360,16 @@ function check_php_version {
 
 # Fix php version number
 function fix_php_version {
+
+    # Catch 'latest' version
+    if [[ $1 == 'latest' ]]; then
+        major=6
+
     # Parse version number
-    major=$(echo $1 | awk -F. '{print $2}')
-    minor=$(echo $1 | awk -F. '{print $3}')
+    else
+        major=$(echo $1 | awk -F. '{print $2}')
+        minor=$(echo $1 | awk -F. '{print $3}')
+    fi
 
     # Fix minor version
     if [[ -z $minor ]]; then
