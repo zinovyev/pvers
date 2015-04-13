@@ -378,9 +378,9 @@ function fix_php_version {
             "1" ) minor=6;;
             "2" ) minor=17;;
             "3" ) minor=29;;
-            "4" ) minor=38;;
-            "5" ) minor=22;;
-            "6" ) minor=6;;
+            "4" ) minor=39;;
+            "5" ) minor=23;;
+            "6" ) minor=7;;
             "*" ) "Wrong major version (should be 0-6)!"; exit 1 ;;
         esac
         echo "5."$major"."$minor

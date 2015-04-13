@@ -70,7 +70,7 @@ Linking...
 Current PHP version is 5.3.29
 ```
 
-4) You can find out which version is currently used by typing:
+4) Check version is currently used by typing:
 ```
 $ php -v
 PHP 5.3.29 (cli) (built: Mar  1 2015 13:34:21) 
