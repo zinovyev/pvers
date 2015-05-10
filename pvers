@@ -296,6 +296,7 @@ function parse_input {
     arg_version=false
     arg_install=false
     arg_select=false
+    arg_options=false
 
     # Walk through all args, mark selected options
     for arg in $@; do
@@ -321,6 +322,10 @@ function parse_input {
             "-vv" | "--verbose" )
                 arg_verbose=true
             ;;
+			"-o" | "--options" )
+				arg_options=true
+				# @todo detect if an option has a value in it and parse
+			;;
             * )
                 if [ $(check_php_version $arg) == true ] && [[ $arg_version == false ]]; then
                     arg_version=$(fix_php_version $arg)
@@ -378,9 +383,9 @@ function fix_php_version {
             "1" ) minor=6;;
             "2" ) minor=17;;
             "3" ) minor=29;;
-            "4" ) minor=39;;
-            "5" ) minor=23;;
-            "6" ) minor=7;;
+            "4" ) minor=40;;
+            "5" ) minor=24;;
+            "6" ) minor=8;;
             "*" ) "Wrong major version (should be 0-6)!"; exit 1 ;;
         esac
         echo "5."$major"."$minor
