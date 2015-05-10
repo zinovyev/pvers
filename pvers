@@ -185,7 +185,8 @@ function c_install {
             --with-pdo-mysql\
             --with-libedit\
             --enable-soap\
-            --enable-sockets")
+            --enable-sockets\
+			--enable-pcntl")
 
         # Detect verbosity
         #
