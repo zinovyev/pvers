@@ -4,10 +4,9 @@ pvers
 *PHP version manager written in BASH. Easy to install and easy to use. Compile different versions of PHP and switch between them in a moment.*
 
 ## Installation
+
 ```sh
-$ git clone https://github.com/zinovyev/pvers.git
-$ sudo mv pvers/pvers /usr/bin/pvers
-$ rm -rf pvers
+$ sudo sh -c "curl -LO https://raw.githubusercontent.com/zinovyev/pvers/v0.7.7/pvers && chmod +x pvers && mv pvers /usr/bin/pvers"
 ```
 
 ## Usage
@@ -18,7 +17,7 @@ $ rm -rf pvers
 Where options are:
 
 
-    -h or --help        Print help message.
+    -h or --help        Print this message.
 
     -v or --version     Print pvers version.
 
@@ -31,6 +30,10 @@ Where options are:
     -s or --select      Select (only) PHP of given version (as root only).
 
     -vv or --verbose    Verbose output (show all warnings and errors).
+
+    -O or --replace     Replace compilation options with user options. (All the following options will be passed directly to the compiler)
+
+    -o or --options     Add user options to the list of existed options. (All the following options will be passed directly to the compiler)
 
 *To install or select (if already installed) PHP of version 5.6.6 just type:*
 ```sh

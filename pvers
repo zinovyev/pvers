@@ -1,6 +1,7 @@
 #! /usr/bin/env bash
+
 #
-# pvers v0.7.6
+# pvers v0.7.7
 # PHP Version Manager
 #  
 # Ivan Zinovyev <vanyazin@gmail.com>
@@ -15,6 +16,11 @@ function main {
     arg_version=false
     arg_install=false
     arg_select=false
+    arg_replace=false
+    arg_options=false
+
+    # Get user options
+    user_options=""
 
     # Parse input values
     parse_input $@
@@ -67,13 +73,12 @@ function main {
 
     else
         c_help; exit 0
-
     fi
 }
 
 # Command: print current version
 function c_version {
-    version="0.7.6"
+    version="0.7.7"
     printf "pvers (PHP version manager) v"$version"\n"
 }
 
@@ -89,7 +94,9 @@ function c_help {
     "-d or --delete      Remove locally installed PHP version (as root only)."\
     "-i or --install     Install (only) PHP of given version (as root only)."\
     "-s or --select      Select (only) PHP of given version (as root only)."\
-    "-vv or --verbose    Verbose output (show all warnings and errors)."
+    "-vv or --verbose    Verbose output (show all warnings and errors)."\
+    "-O or --replace     Replace compilation options with user options. (All the following options will be passed directly to the compiler)"\
+    "-o or --options     Add compilation options to the list of existed options. (All the following options will be passed directly to the compiler)"
 
     # -f or --force
     # -g or --global
@@ -173,27 +180,42 @@ function c_install {
 
         echo "Configuring..."
         cd src
-        compile_options=("--prefix="$builddir"\
-            --with-config-file-path="$confpath"\
-            --with-openssl\
-            --enable-bcmath\
-            --enable-fpm\
-            --with-openssl\
-            --with-curl\
-            --enable-mbstring\
-            --with-mysqli\
-            --with-pdo-mysql\
-            --with-libedit\
-            --enable-soap\
-            --enable-sockets\
-			--enable-pcntl")
+
+        # Common options
+        common_options=(
+            "--prefix="$builddir
+            "--with-config-file-path="$confpath
+        )
+        # Defaut set of options
+        default_options=(
+            "--enable-bcmath"
+            "--enable-fpm"
+            "--with-openssl"
+            "--with-curl"
+            "--enable-mbstring"
+            "--with-mysqli"
+            "--with-pdo-mysql"
+            "--with-libedit"
+            "--enable-soap"
+            "--enable-sockets"
+            "--enable-pcntl"
+        )
+
+        # Create a plain string of compilation options
+        if [[ $arg_options == true ]]; then
+            compilation_options=${common_options[@]}" "${default_options[@]}" "$user_options
+        elif [[ $arg_replace == true ]]; then
+            compilation_options=${common_options[@]}" "$user_options
+        else
+            compilation_options=${common_options[@]}" "${default_options[@]}
+        fi
 
         # Detect verbosity
         #
         if [[ $arg_verbose != true ]]; then
-            ./configure $compile_options -q >/dev/null 2>&1
+            ./configure $compilation_options -q >/dev/null 2>&1
         else
-            ./configure $compile_options
+            ./configure $compilation_options
         fi
         
         echo "Compiling..."
@@ -298,9 +320,13 @@ function parse_input {
     arg_install=false
     arg_select=false
     arg_options=false
+    arg_replace=false
+    user_options=""
 
     # Walk through all args, mark selected options
-    for arg in $@; do
+    for ((i=1; i<=$#; i++)); do
+        arg=${@:$i:1}
+        nxt=${@:$i+1:1}
         case $arg in
             "-h" | "--help" )
                 arg_help=true
@@ -324,8 +350,32 @@ function parse_input {
                 arg_verbose=true
             ;;
 			"-o" | "--options" )
-				arg_options=true
-				# @todo detect if an option has a value in it and parse
+			    if [[ $arg_replace == false ]]; then
+                    arg_options=true
+
+                    user_options=""
+                    for ((j=$i+1; j<=$#; j++)); do
+                        user_options=$user_options" "${!j}
+                    done
+
+                    break;
+                else
+                    arg_options=false
+			    fi
+			;;
+			"-O" | "--replace" )
+			    if [[ $arg_options == false ]]; then
+                    arg_replace=true
+
+                    user_options=""
+                    for ((j=$i+1; j<=$#; j++)); do
+                        user_options=$user_options" "${!j}
+                    done
+
+                    break;
+                else
+                    arg_replace=false
+			    fi
 			;;
             * )
                 if [ $(check_php_version $arg) == true ] && [[ $arg_version == false ]]; then
