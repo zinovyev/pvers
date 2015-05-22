@@ -92,3 +92,7 @@ $ pvers -l
 5.6.2
 5.6.6
 ```
+
+## Troubleshooting
+
+If you get in troubles while installation, first of all remove broken distro using ```sh $ pvers -d 5.3.4``` command. Then try running again in verbose mode: ```sh $ pvers 5.3.4 -vv``` to see all errors and warnings.
